@@ -22,16 +22,15 @@ Script for Qt Creator to make debugging godot easier.
     * PoolVector2Array
     * PoolVector3Array
     * PoolColorArray
+* Array
+* Vector2i
+* Rect2i
 
 More information for the debugger
 https://doc.qt.io/qtcreator/creator-debugging-helpers.html
 
 ## TODO:
-* Object type for Variant type
-* Array
 * Dictionary
 * Map
 * List
 * HashMap
-* Vector2i
-* Rect2i

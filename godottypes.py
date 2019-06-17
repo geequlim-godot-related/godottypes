@@ -79,11 +79,20 @@ def extract_bytes(dumper, addr, size):
 def qdump__Variant(d, value):
 	type = value['type'].integer()
 	mem = value['_data']
+	ptr = value['_data']['_ptr']
 	content = get_variant_title(type, mem)
-	d.putValue('[{}] {}'.format(VARIANT_NAMES[type], content))
+	if len(content):
+		d.putValue('[{}] {}'.format(VARIANT_NAMES[type], content))
+	elif type == VARIANT_TYPE_STRING:
+		d.putItem(mem.cast('wchar_t*'))
+		d.putType(value.type)
+	elif type == VARIANT_TYPE_OBJECT:
+		d.putValue("[Object] 0x%x" % ptr.pointer())
+		d.putType(value.type)
 	d.putNumChild(2)
 	if d.isExpanded():
 		with Children(d):
+			if type == VARIANT_TYPE_OBJECT: d.putSubItem("ptr", ptr.cast('%s*' % VARIANT_NAMES[type]))
 			d.putFields(value)
 
 def qdump__Vector2(d, value):
@@ -178,7 +187,6 @@ def get_variant_title(type, mem):
 	elif type == VARIANT_TYPE_BASIS: content = '[(%s, %s, %s), (%s, %s, %s), (%s, %s, %s)]' % (mem.split('fffffffff'))
 	elif type == VARIANT_TYPE_TRANSFORM: content = '[[(%s, %s, %s), (%s, %s, %s), (%s, %s, %s)], (%s, %s, %s)]' % (mem.split('ffffffffffff'))
 	elif type == VARIANT_TYPE_PLANE: content = '[(%s, %s, %s), %s]' % (mem.split('ffff'))
-	elif type == VARIANT_TYPE_OBJECT: content = []
 	return content
 
 def qdump__String(d, value):
@@ -210,12 +218,37 @@ def qdump__StringName(d, value):
 
 def qdump__Vector(d, value):
 	ptr = value["_cowdata"]["_ptr"]
-	if ptr.integer() == 0:
+	if ptr.pointer() == 0:
 		d.putValue("<empty>")
 		return
-	size = d.parseAndEvaluate("size();").integer()
+	size = d.parseAndEvaluate("size()").integer()
 	type = d.templateArgument(value.type, 0)
 	d.putValue("0x%x [size %i]" % (value.laddress, size))
 	d.putNumChild(size)
 	if d.isExpanded():
 		d.putArrayData(ptr.pointer(), size, type)
+		
+def qdump__Array(d, value):
+	size = d.parseAndEvaluate("size();").integer()
+	if size == 0:
+		d.putValue("<empty>")
+		return
+	d.putValue("0x%x [size %i]" % (value.laddress, size))
+	d.putNumChild(size)
+	if d.isExpanded():
+		arr = value['_p']["array"]
+		d.putArrayData(arr.address(), size, d.lookupType("Variant"))
+
+def qdump__Vector2i(d, value):
+	d.putNumChild(2)
+	d.putValue("(%i, %i)" % (value.split("ii")))
+	if d.isExpanded():
+		with Children(d):
+			d.putFields(value)
+
+def qdump__Rect2i(d, value):
+	d.putNumChild(2)
+	d.putValue("(%i, %i, %i, %i)" % (value.split("iiii")))
+	if d.isExpanded():
+		with Children(d):
+			d.putFields(value)
