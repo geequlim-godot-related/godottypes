@@ -215,29 +215,101 @@ def qdump__StringName(d, value):
 		with Children(d):
 			d.putFields(value)
 
-
 def qdump__Vector(d, value):
-	ptr = value["_cowdata"]["_ptr"]
-	if ptr.pointer() == 0:
-		d.putValue("<empty>")
+	ptr = value["_cowdata"]["_ptr"].cast(d.createType("uint32_t*"))
+	if ptr.integer() == 0:
+		d.putValue("<empty>");
 		return
-	size = d.parseAndEvaluate("size()").integer()
-	type = d.templateArgument(value.type, 0)
-	d.putValue("0x%x [size %i]" % (value.laddress, size))
+
+	ptr_expr = d.makeExpression(ptr)
+	size_expr = "*({} - 1)".format(ptr_expr)
+	size = d.parseAndEvaluate(size_expr).integer()
+
+	address = value["_cowdata"]["_ptr"].extractPointer()
+	base_type = d.templateArgument(value.type,0)
+	d.putValue("@0x{:02x} [size {}]".format(address, size))
+
 	d.putNumChild(size)
 	if d.isExpanded():
-		d.putArrayData(ptr.pointer(), size, type)
-		
+		d.putArrayData(address, size, base_type)
+
 def qdump__Array(d, value):
-	size = d.parseAndEvaluate("size();").integer()
-	if size == 0:
-		d.putValue("<empty>")
-		return
-	d.putValue("0x%x [size %i]" % (value.laddress, size))
+	arr = value["_p"]["array"]
+	d.putItem(arr)
+	d.putType(value.type)
+
+def qdump__List(d, value):
+	size = value["_data"]["size_cache"].integer()
+	first_ptr = value["_data"]["first"]
+	
+	d.putValue("@0x{:02x} [size {}]".format(value.extractPointer(), size))
 	d.putNumChild(size)
+	
 	if d.isExpanded():
-		arr = value['_p']["array"]
-		d.putArrayData(arr.address(), size, d.lookupType("Variant"))
+		with Children(d):
+			element = first_ptr.dereference()
+			for i in range(size):
+				d.putSubItem(i,element["value"])
+				element = element["next_ptr"].dereference()
+
+def qdump__Map(d, value):
+	root_ptr = value["_data"]["_root"]
+	size = value["_data"]["size_cache"].integer()
+
+	d.putValue("@0x{:02x} [size {}]".format(value.extractPointer(), size))
+	d.putNumChild(size)
+
+	if d.isExpanded():
+		with Children(d, size):
+			# Find first element
+			element = root_ptr.dereference()
+			while element["left"].pointer() != value["_data"]["_nil"].pointer():
+				element = element["left"].dereference()
+
+			for i in range(size):
+				d.putPairItem(None, (element["_key"],element["_value"]), "key", "value")
+				element = element["_next"].dereference()
+
+def qdump__HashMap(d, value):
+	elements = value["elements"] 
+	hash_table = value["hash_table"]
+	hash_table_power = value["hash_table_power"]
+	table_size = 1 << (hash_table_power.integer()) 
+
+	d.putValue("@0x{:02x} [size {}]".format(value.extractPointer(), elements.integer()))
+	d.putNumChild(3)
+
+	if d.isExpanded():
+		with Children(d):
+			d.putSubItem("elements", elements)
+			d.putSubItem("hash_table_power", hash_table_power)
+			p_type = hash_table.type.target().unqualified()
+			with SubItem(d, "hash_table"):
+				d.putNumChild(table_size)
+				if d.isExpanded():
+					d.putArrayData(hash_table.extractPointer(), table_size, p_type)
+
+def qdump__OrderedHashMap(d, value):
+	internal_list = value["list"]
+
+	size = internal_list["_data"]["size_cache"].integer()
+	first_ptr = internal_list["_data"]["first"]
+
+	d.putValue("@0x{:02x} [size {}]".format(value.extractPointer(), size))
+	d.putNumChild(size)
+
+	if d.isExpanded():
+		with Children(d, size):
+			element = first_ptr.dereference()
+			for i in range(size):
+				d.putPairItem(None, (element["first"],element["second"]), "key", "value")
+				element = element["next_ptr"].dereference()
+
+def qdump__Dictionary(d, value):
+	variant_map = value["_p"]["variant_map"]
+	d.putItem(variant_map)
+	d.putType(value.type)
+
 
 def qdump__Vector2i(d, value):
 	d.putNumChild(2)
