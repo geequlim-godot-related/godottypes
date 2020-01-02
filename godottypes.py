@@ -77,14 +77,14 @@ def extract_bytes(dumper, addr, size):
 	return result
 
 def qdump__Variant(d, value):
-	type = value['type'].integer()
-	mem = value['_data']
-	ptr = value['_data']['_ptr']
+	type = value["type"].integer()
+	mem = value["_data"]
+	ptr = value["_data"]["_ptr"]
 	content = get_variant_title(type, mem)
 	if len(content):
-		d.putValue('[{}] {}'.format(VARIANT_NAMES[type], content))
+		d.putValue("[{}] {}".format(VARIANT_NAMES[type], content))
 	elif type == VARIANT_TYPE_STRING:
-		d.putItem(mem.cast('wchar_t*'))
+		d.putItem(mem.cast("wchar_t*"))
 		d.putType(value.type)
 	elif type == VARIANT_TYPE_OBJECT:
 		d.putValue("[Object] 0x%x" % ptr.pointer())
@@ -92,7 +92,7 @@ def qdump__Variant(d, value):
 	d.putNumChild(2)
 	if d.isExpanded():
 		with Children(d):
-			if type == VARIANT_TYPE_OBJECT: d.putSubItem("ptr", ptr.cast('%s*' % VARIANT_NAMES[type]))
+			if type == VARIANT_TYPE_OBJECT: d.putSubItem("ptr", ptr.cast("%s*" % VARIANT_NAMES[type]))
 			d.putFields(value)
 
 def qdump__Vector2(d, value):
@@ -179,19 +179,19 @@ def get_variant_title(type, mem):
 	elif type == VARIANT_TYPE_BOOL: content = str(mem.bool())
 	elif type == VARIANT_TYPE_REAL: content = str(mem.floatingPoint())
 	elif type == VARIANT_TYPE_RID: content = str(mem.extractInteger(32, True))
-	elif type in [VARIANT_TYPE_COLOR, VARIANT_TYPE_RECT2, VARIANT_TYPE_QUAT]: content = '(%s, %s, %s, %s)' % (mem.split('ffff'))
-	elif type == VARIANT_TYPE_VECTOR2: content = '(%s, %s)' % (mem.split('ff'))
-	elif type == VARIANT_TYPE_VECTOR3: content = '(%s, %s, %s)' % (mem.split('fff'))
-	elif type == VARIANT_TYPE_TRANSFORM2D: content = '[(%s, %s), (%s, %s), (%s, %s)]' % (mem.split('ffffff'))
-	elif type == VARIANT_TYPE_AABB: content = '[(%s, %s, %s), (%s, %s, %s)]' % (mem.split('ffffff'))
-	elif type == VARIANT_TYPE_BASIS: content = '[(%s, %s, %s), (%s, %s, %s), (%s, %s, %s)]' % (mem.split('fffffffff'))
-	elif type == VARIANT_TYPE_TRANSFORM: content = '[[(%s, %s, %s), (%s, %s, %s), (%s, %s, %s)], (%s, %s, %s)]' % (mem.split('ffffffffffff'))
-	elif type == VARIANT_TYPE_PLANE: content = '[(%s, %s, %s), %s]' % (mem.split('ffff'))
+	elif type in [VARIANT_TYPE_COLOR, VARIANT_TYPE_RECT2, VARIANT_TYPE_QUAT]: content = "(%s, %s, %s, %s)" % (mem.split("ffff"))
+	elif type == VARIANT_TYPE_VECTOR2: content = "(%s, %s)" % (mem.split("ff"))
+	elif type == VARIANT_TYPE_VECTOR3: content = "(%s, %s, %s)" % (mem.split("fff"))
+	elif type == VARIANT_TYPE_TRANSFORM2D: content = "[(%s, %s), (%s, %s), (%s, %s)]" % (mem.split("ffffff"))
+	elif type == VARIANT_TYPE_AABB: content = "[(%s, %s, %s), (%s, %s, %s)]" % (mem.split("ffffff"))
+	elif type == VARIANT_TYPE_BASIS: content = "[(%s, %s, %s), (%s, %s, %s), (%s, %s, %s)]" % (mem.split("fffffffff"))
+	elif type == VARIANT_TYPE_TRANSFORM: content = "[[(%s, %s, %s), (%s, %s, %s), (%s, %s, %s)], (%s, %s, %s)]" % (mem.split("ffffffffffff"))
+	elif type == VARIANT_TYPE_PLANE: content = "[(%s, %s, %s), %s]" % (mem.split("ffff"))
 	return content
 
 def qdump__String(d, value):
 	if value["_cowdata"]["_ptr"].integer() == 0:
-		d.putValue('<empty>')
+		d.putValue("<empty>")
 		return
 	d.putItem(value["_cowdata"]["_ptr"])
 	d.putType(value.type)
@@ -199,7 +199,7 @@ def qdump__String(d, value):
 	if d.isExpanded():
 		with Children(d):
 			if d.canCallLocale():
-				d.putCallItem('length', 'int', value, 'length')
+				d.putCallItem("length", "int", value, "length")
 			d.putFields(value)
 
 def qdump__StringName(d, value):
